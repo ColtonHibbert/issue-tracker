@@ -33,26 +33,49 @@ module.exports = function (app, db) {
       console.log('post body', req.body);
       var project = req.params.project;
       //err handling for missing required fields?
-      const issueTitle = req.query.issue_title;
-      const issueText = req.query.issue_text;
-      const createdBy = req.query.created_by;
-      let assignedTo = req.query.assigned_to;
-      let statusText = req.query.status_text;
+      const issueTitle = req.body.issue_title;
+      const issueText = req.body.issue_text;
+      const createdBy = req.body.created_by;
+      let assignedTo = req.body.assigned_to;
+      let statusText = req.body.status_text;
+      let projectId = null;
       if(assignedTo === undefined) {
         assignedTo = "";
       }
       if(statusText === undefined) {
         statusText = "";
       }
-      db.transaction(trx => {
+      await db.transaction(trx => {
+        trx.insert({
+          project_name: project
+        })
+        .into('project')
+        .returning('_id')
+        .then(data => {
+          projectId = data[0];
+          console.log(data[0], '_id for project')
+        })
+        .then(trx.commit)
+        .catch(trx.rollback)
+      })
+      .catch(err => console.log(err))
+
+      await db.transaction(trx => {
         trx.insert({
           issue_title: issueTitle,
           issue_text: issueText,
           created_by: createdBy,
           assigned_to: assignedTo,
-          status_text: statusText 
-        }).into('issue')
+          status_text: statusText,
+          project_id: projectId
+        })
+        .into('issue')
+        .returning('*')
+        .then(data => console.log(data, 'data in post'))
+        .then(trx.commit)
+        .catch(trx.rollback)
       })
+      .catch(err => console.log(err))
     })
     
     .put(function (req, res){
