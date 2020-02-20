@@ -4,12 +4,28 @@ var express     = require('express');
 var bodyParser  = require('body-parser');
 var expect      = require('chai').expect;
 var cors        = require('cors');
+const helmet = require('helmet');
+const knex = require('knex');
+require('dotenv').config();
 
 var apiRoutes         = require('./routes/api.js');
 var fccTestingRoutes  = require('./routes/fcctesting.js');
 var runner            = require('./test-runner');
 
+const db = knex({
+  client: 'pg',
+  connection: {
+    host: '127.0.0.1',
+    user: process.env.USER,
+    password: process.env.PASS,
+    database: 'issuetracker'
+  }
+})
+
+db.select('*').from('issue').then(data => console.log(data, 'db works'));
+
 var app = express();
+app.use(helmet.xssFilter());
 
 app.use('/public', express.static(process.cwd() + '/public'));
 
@@ -36,7 +52,7 @@ app.route('/')
 fccTestingRoutes(app);
 
 //Routing for API 
-apiRoutes(app);  
+apiRoutes(app, db);  
     
 //404 Not Found Middleware
 app.use(function(req, res, next) {
