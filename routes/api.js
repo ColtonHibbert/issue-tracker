@@ -9,24 +9,23 @@
 'use strict';
 
 var expect = require('chai').expect;
-//var MongoClient = require('mongodb');
-//var ObjectId = require('mongodb').ObjectID;
-
-//const CONNECTION_STRING = process.env.DB; //MongoClient.connect(CONNECTION_STRING, function(err, db) {});
 
 module.exports = function (app, db) {
 
   app.route('/api/issues/:project')
   
-    .get(function (req, res){
+    .get(async function (req, res){
       var project = req.params.project;
       var query = req.query;
       //console.log('get project', project)
       console.log('get params', req.params);
       console.log('get query', query);
       console.log('get body', req.body);
+      //join
+      
     })
     
+    //data not inserting project_id 
     .post(async function (req, res){
       console.log('post params', req.params);
       console.log('post query', req.query);
@@ -47,7 +46,7 @@ module.exports = function (app, db) {
       if(statusText === undefined) {
         statusText = "";
       }
-      await db.select('project_name').from('project').where('project_name', '=', project)
+      await db.select('*').from('project').where('project_name', '=', project)
       .returning('*')
       .then( data => {
         console.log(data[0], 'data')
@@ -55,8 +54,10 @@ module.exports = function (app, db) {
           console.log(data, 'data and projectFound should be false')
           projectFound = false;
         }
-        if(data[0]._id) {
-          projectId = data[0]._id
+        if(data[0] !== undefined ) {
+          projectId = data[0]._id;
+          console.log(data)
+          console.log(projectId, 'projectId, data not undefined')
         }
       })
       .catch(err => console.log(err))
@@ -97,7 +98,20 @@ module.exports = function (app, db) {
         })
         .into('issue')
         .returning('*')
-        .then(data => console.log(data, 'data in post'))
+        .then(data => {
+          console.log(data, 'data in post')
+          res.json({
+            _id: data[0]._id,
+            issue_title: data[0].issue_title,
+            issue_text: data[0].issue_text,
+            created_on: data[0].created_on,
+            updated_on: data[0].updated_on,
+            created_by: data[0].created_by,
+            assigned_to: data[0].assigned_to,
+            open: data[0].open,
+            status_text: data[0].status_text
+          })
+        })
         .then(trx.commit)
         .catch(trx.rollback)
       })
