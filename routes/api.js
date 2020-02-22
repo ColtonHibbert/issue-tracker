@@ -22,6 +22,17 @@ module.exports = function (app, db) {
       console.log('get query', query);
       console.log('get body', req.body);
       //join
+      db.select('_id').from('project').where('project_name', '=', project)
+      .then(data => {
+        const projectId = data[0]._id;
+        console.log('here is the projectid', projectId)
+        db.select('_id', 'issue_title', 'issue_text', 'created_on', 'updated_on', 'created_by', 'assigned_to', 'open', 'status_text')
+        .from('issue').where('project_id', '=', projectId)
+        .then(data => {
+          console.log(data, 'data in get')
+          res.json(data)
+        })
+      })
       
     })
     

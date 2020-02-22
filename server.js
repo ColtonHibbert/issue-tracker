@@ -22,7 +22,7 @@ const db = knex({
   }
 })
 
-db.select('*').from('issue').then(data => console.log(data, 'db works'));
+//db.select('*').from('issue').then(data => console.log(data, 'db works'));
 
 var app = express();
 app.use(helmet.xssFilter());
