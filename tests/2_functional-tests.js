@@ -68,7 +68,17 @@ suite('Functional Tests', function() {
       });
       
       test('Missing required fields', function(done) {
-        
+        chai.request(server)
+        .post('/api/issues/test')
+        .send({
+          assigned_to: 'funcitonal test- missing required fields',
+          status_text: 'missing required fields should be the response'
+        })
+        .end( function(err, res) {
+          assert.equal(res.status, 200 );
+          assert.equal(res.body, 'missing required fields');
+          done();
+        })
       });
       
     });
@@ -76,15 +86,43 @@ suite('Functional Tests', function() {
     suite('PUT /api/issues/{project} => text', function() {
       
       test('No body', function(done) {
-        
+        chai.request(server)
+        .put('/api/issues/test')
+        .end( function(err, res) {
+          assert.equal(res.status, 200);
+          assert.equal(res.body, 'no updated field sent');
+          done();
+        })
       });
       
       test('One field to update', function(done) {
-        
+        chai.request(server)
+        .put('/api/issues/test')
+        .send({
+          _id: 4,
+          issue_title: 'put request, one field updated'
+        })
+        .end( function(err, res) {
+          assert.equal(res.status, 200);
+          assert.equal(res.body, 'successfully updated');
+          done();
+        })
       });
       
       test('Multiple fields to update', function(done) {
-        
+        chai.request(server)
+        .put('/api/issues/test')
+        .send({
+          _id: 4,
+          issue_title: 'put request,  multiple fields updated',
+          created_by: 'put test guy',
+          assigned_to: 'colt put test'
+        })
+        .end( function(err, res) {
+          assert.equal(res.status, 200);
+          assert.equal(res.body, 'successfully updated');
+          done();
+        })
       });
       
     });

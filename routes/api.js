@@ -66,10 +66,12 @@ module.exports = function (app, db) {
       console.log('post query', req.query);
       console.log('post body', req.body);
       var project = req.params.project;
-      //err handling for missing required fields?
       const issueTitle = req.body.issue_title;
       const issueText = req.body.issue_text;
       const createdBy = req.body.created_by;
+      if(issueTitle === undefined || issueText === undefined || createdBy === undefined ) {
+        return res.json('missing required fields')
+      }
       let assignedTo = req.body.assigned_to;
       let statusText = req.body.status_text;
       let projectId = null;
@@ -161,19 +163,19 @@ module.exports = function (app, db) {
       console.log('put query', req.query);
       console.log('put body', req.body);
       let updatingObject = {};
-      if(req.body.issue_title !== '') {
+      if(req.body.issue_title !== '' && req.body.issue_title !== undefined ) {
         updatingObject.issue_title = req.body.issue_title;
       }
-      if(req.body.issue_text !== '') {
+      if(req.body.issue_text !== '' && req.body.issue_text !== undefined ) {
         updatingObject.issue_text = req.body.issue_text;
       }
-      if(req.body.created_by !== '') {
+      if(req.body.created_by !== '' && req.body.created_by !== undefined ) {
         updatingObject.created_by = req.body.created_by;
       }
-      if(req.body.assigned_to !== '') {
+      if(req.body.assigned_to !== '' && req.body.assigned_to !== undefined ) {
         updatingObject.assigned_to = req.body.assigned_to;
       }
-      if(req.body.status_text !== '') {
+      if(req.body.status_text !== '' && req.body.status_text !== undefined ) {
         updatingObject.status_text = req.body.status_text;
       }
       if (req.body.open !== undefined ) {
@@ -181,6 +183,7 @@ module.exports = function (app, db) {
       }
       console.log(updatingObject, 'here is updating object');
       if(Object.keys(updatingObject).length === 0 && updatingObject.constructor === Object) {
+        console.log('res.json should be no updated field sent');
         return res.json('no updated field sent');
       }
       //_id to number
