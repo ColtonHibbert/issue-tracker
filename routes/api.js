@@ -130,16 +130,78 @@ module.exports = function (app, db) {
 
     })
     
-    .put(function (req, res){
+    .put(async function (req, res) {
       var project = req.params.project;
       console.log('put project', project);
       console.log('put params', req.params);
       console.log('put query', req.query);
       console.log('put body', req.body);
+      let updatingObject = {};
+      if(req.body.issue_title !== '') {
+        updatingObject.issue_title = req.body.issue_title;
+      }
+      if(req.body.issue_text !== '') {
+        updatingObject.issue_text = req.body.issue_text;
+      }
+      if(req.body.created_by !== '') {
+        updatingObject.created_by = req.body.created_by;
+      }
+      if(req.body.assigned_to !== '') {
+        updatingObject.assigned_to = req.body.assigned_to;
+      }
+      if(req.body.status_text !== '') {
+        updatingObject.status_text = req.body.status_text;
+      }
+      if (req.body.open !== undefined ) {
+        updatingObject.open = req.body.open;
+      }
+      console.log(updatingObject, 'here is updating object')
+      if(Object.keys(updatingObject).length === 0 && updatingObject.constructor === Object) {
+        return res.json('no updated field sent')
+      }
+      //_id to number
+      const issueId = Number(req.body._id);
+      await db.transaction(trx => {
+        trx('issue')
+        .where('_id', '=', issueId)
+        .update(updatingObject)
+        .update('updated_on',  db.fn.now())
+        .returning('*')
+        .then(data => {
+          console.log(data, 'data inside put after update')
+          if(data[0] === undefined) {
+            return res.json('could not update ' + issueId)
+          }
+          res.json('successfully updated')
+        })
+        .then(trx.commit)
+        .catch(trx.rollback)
+      }).catch(err => console.log(err))
+
     })
     
     .delete(function (req, res){
+      console.log('delete')
       var project = req.params.project;
+      const issueId = Number(req.body._id);
+      console.log(project, 'delete, project_name');
+      console.log(issueId, 'delete issueId');
+      if(issueId === undefined ) {
+        return res.json('_id error')
+      }
+      db.transaction(trx => {
+        trx.delete('*').from('issue').where('_id', '=', issueId)
+        .returning('*')
+        .then(data => {
+          console.log(data, 'data returned from delete')
+          if(data[0] === undefined) {
+            res.json({ failed: 'could not delete '+ issueId })
+          }
+          res.json({ success: 'deleted '+ issueId })
+        })
+        .then(trx.commit)
+        .catch(trx.rollback)
+      }).catch(err => console.log(err))
       
     });
     
