@@ -17,20 +17,44 @@ module.exports = function (app, db) {
     .get(async function (req, res){
       var project = req.params.project;
       var query = req.query;
-      //console.log('get project', project)
+      //console.log('get project', project);
       console.log('get params', req.params);
       console.log('get query', query);
       console.log('get body', req.body);
-      //join
+      
+      let queryObject = {};
+
+      if(query.issue_title !== undefined ) {
+        queryObject.issue_title = query.issue_title;
+      }
+      if(query.issue_text !== undefined ) {
+        queryObject.issue_text = query.issue_text;
+      }
+      if(query.created_by !== undefined ) {
+        queryObject.created_by = query.created_by;
+      }
+      if(query.assigned_to !== undefined ) {
+        queryObject.assigned_to = query.assigned_to;
+      }
+      if(query.status_text !== undefined ) {
+        queryObject.status_text = query.status_text;
+      }
+      if(query.open !== undefined ) {
+        queryObject.open = query.open;
+      }
+      console.log(queryObject, 'here is the queryObject')
+      //change where 
       db.select('_id').from('project').where('project_name', '=', project)
       .then(data => {
         const projectId = data[0]._id;
-        console.log('here is the projectid', projectId)
+        console.log('here is the projectid', projectId);
         db.select('_id', 'issue_title', 'issue_text', 'created_on', 'updated_on', 'created_by', 'assigned_to', 'open', 'status_text')
-        .from('issue').where('project_id', '=', projectId)
+        .from('issue')
+        .where('project_id', '=', projectId)
+        .andWhere(queryObject)
         .then(data => {
-          console.log(data, 'data in get')
-          res.json(data)
+          console.log(data, 'data in get');
+          res.json(data);
         })
       })
       
@@ -42,7 +66,7 @@ module.exports = function (app, db) {
       console.log('post query', req.query);
       console.log('post body', req.body);
       var project = req.params.project;
-      //err handling for missing required fields? none for this project, prevented on client side
+      //err handling for missing required fields?
       const issueTitle = req.body.issue_title;
       const issueText = req.body.issue_text;
       const createdBy = req.body.created_by;
@@ -60,22 +84,22 @@ module.exports = function (app, db) {
       await db.select('*').from('project').where('project_name', '=', project)
       .returning('*')
       .then( data => {
-        console.log(data[0], 'data')
+        console.log(data[0], 'data');
         if(data[0] === undefined ) {
-          console.log(data, 'data and projectFound should be false')
+          console.log(data, 'data and projectFound should be false');
           projectFound = false;
         }
         if(data[0] !== undefined ) {
           projectId = data[0]._id;
-          console.log(data)
-          console.log(projectId, 'projectId, data not undefined')
+          console.log(data);
+          console.log(projectId, 'projectId, data not undefined');
         }
       })
       .catch(err => console.log(err))
       
       function insertProjectIfNeeded() {
         if(projectFound === false) {
-          console.log('start of insertProjectifNeeded')
+          console.log('start of insertProjectifNeeded');
           return db.transaction(trx => {
             trx.insert({
               project_name: project
@@ -84,7 +108,7 @@ module.exports = function (app, db) {
             .returning('_id')
             .then(data => {
               projectId = data[0];
-              console.log(data[0], '_id for project, inserting project')
+              console.log(data[0], '_id for project, inserting project');
             })
             .then(trx.commit)
             .then(() => {
@@ -96,7 +120,7 @@ module.exports = function (app, db) {
         }
       }
       await insertProjectIfNeeded();
-      console.log('after insertProjectIfNeeded')
+      console.log('after insertProjectIfNeeded');
 
       await db.transaction(trx => {
         trx.insert({
@@ -121,7 +145,7 @@ module.exports = function (app, db) {
             assigned_to: data[0].assigned_to,
             open: data[0].open,
             status_text: data[0].status_text
-          })
+          });
         })
         .then(trx.commit)
         .catch(trx.rollback)
@@ -155,9 +179,9 @@ module.exports = function (app, db) {
       if (req.body.open !== undefined ) {
         updatingObject.open = req.body.open;
       }
-      console.log(updatingObject, 'here is updating object')
+      console.log(updatingObject, 'here is updating object');
       if(Object.keys(updatingObject).length === 0 && updatingObject.constructor === Object) {
-        return res.json('no updated field sent')
+        return res.json('no updated field sent');
       }
       //_id to number
       const issueId = Number(req.body._id);
@@ -168,11 +192,11 @@ module.exports = function (app, db) {
         .update('updated_on',  db.fn.now())
         .returning('*')
         .then(data => {
-          console.log(data, 'data inside put after update')
+          console.log(data, 'data inside put after update');
           if(data[0] === undefined) {
-            return res.json('could not update ' + issueId)
+            return res.json('could not update ' + issueId);
           }
-          res.json('successfully updated')
+          res.json('successfully updated');
         })
         .then(trx.commit)
         .catch(trx.rollback)
@@ -187,7 +211,7 @@ module.exports = function (app, db) {
       console.log(project, 'delete, project_name');
       console.log(issueId, 'delete issueId');
       if(issueId === undefined ) {
-        return res.json('_id error')
+        return res.json('_id error');
       }
       db.transaction(trx => {
         trx.delete('*').from('issue').where('_id', '=', issueId)
@@ -195,9 +219,9 @@ module.exports = function (app, db) {
         .then(data => {
           console.log(data, 'data returned from delete')
           if(data[0] === undefined) {
-            res.json({ failed: 'could not delete '+ issueId })
+            res.json({ failed: 'could not delete '+ issueId });
           }
-          res.json({ success: 'deleted '+ issueId })
+          res.json({ success: 'deleted '+ issueId });
         })
         .then(trx.commit)
         .catch(trx.rollback)
