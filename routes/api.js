@@ -14,7 +14,7 @@ module.exports = function (app, db) {
 
   app.route('/api/issues/:project')
   
-    .get(async function (req, res){
+    .get(async function (req, res) {
       var project = req.params.project;
       var query = req.query;
       //console.log('get project', project);
@@ -43,7 +43,7 @@ module.exports = function (app, db) {
         queryObject.open = query.open;
       }
       console.log(queryObject, 'here is the queryObject')
-      //change where 
+    
       db.select('_id').from('project').where('project_name', '=', project)
       .then(data => {
         const projectId = data[0]._id;
@@ -216,6 +216,7 @@ module.exports = function (app, db) {
       if(issueId === undefined ) {
         return res.json('_id error');
       }
+
       db.transaction(trx => {
         trx.delete('*').from('issue').where('_id', '=', issueId)
         .returning('*')
@@ -224,7 +225,9 @@ module.exports = function (app, db) {
           if(data[0] === undefined) {
             res.json({ failed: 'could not delete '+ issueId });
           }
-          res.json({ success: 'deleted '+ issueId });
+          if(data[0] !== undefined ) {
+            res.json({ success: 'deleted '+ issueId });
+          }
         })
         .then(trx.commit)
         .catch(trx.rollback)

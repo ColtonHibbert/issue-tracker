@@ -10,8 +10,17 @@ var chaiHttp = require('chai-http');
 var chai = require('chai');
 var assert = chai.assert;
 var server = require('../server');
+const knex = require('knex');
 
 chai.use(chaiHttp);
+
+const db = knex({
+  client: 'pg',
+  connection: {
+    connectionString: process.env.DATABASE_URL,
+    ssl: true
+  }
+})
 
 suite('Functional Tests', function() {
   
@@ -99,7 +108,7 @@ suite('Functional Tests', function() {
         chai.request(server)
         .put('/api/issues/test')
         .send({
-          _id: 4,
+          _id: 1,
           issue_title: 'put request, one field updated'
         })
         .end( function(err, res) {
@@ -113,7 +122,7 @@ suite('Functional Tests', function() {
         chai.request(server)
         .put('/api/issues/test')
         .send({
-          _id: 4,
+          _id: 1,
           issue_title: 'put request,  multiple fields updated',
           created_by: 'put test guy',
           assigned_to: 'colt put test'
@@ -150,22 +159,92 @@ suite('Functional Tests', function() {
       });
       
       test('One filter', function(done) {
-        
+        chai.request(server)
+        .get('/api/issues/test')
+        .query({
+          open: 'true'
+        })
+        .end( function(err, res) {
+          assert.equal(res.status, 200);
+          assert.isArray(res.body);
+          assert.property(res.body[0], 'issue_title');
+          assert.property(res.body[0], 'issue_text');
+          assert.property(res.body[0], 'created_on');
+          assert.property(res.body[0], 'updated_on');
+          assert.property(res.body[0], 'created_by');
+          assert.property(res.body[0], 'assigned_to');
+          assert.property(res.body[0], 'open');
+          assert.property(res.body[0], 'status_text');
+          assert.property(res.body[0], '_id');
+          assert.equal(res.body[0].open, true)
+          done();
+        })
       });
       
       test('Multiple filters (test for multiple fields you know will be in the db for a return)', function(done) {
-        
+        chai.request(server)
+        .get('/api/issues/test')
+        .query({
+          open: 'true',
+          status_text: '',
+          assigned_to: ''
+        })
+        .end( function(err, res) {
+          assert.equal(res.status, 200);
+          assert.isArray(res.body);
+          assert.property(res.body[0], 'issue_title');
+          assert.property(res.body[0], 'issue_text');
+          assert.property(res.body[0], 'created_on');
+          assert.property(res.body[0], 'updated_on');
+          assert.property(res.body[0], 'created_by');
+          assert.property(res.body[0], 'assigned_to');
+          assert.property(res.body[0], 'open');
+          assert.property(res.body[0], 'status_text');
+          assert.property(res.body[0], '_id');
+          assert.equal(res.body[0].open, true);
+          assert.equal(res.body[0].status_text, '');
+          assert.equal(res.body[0].assigned_to, '');
+          done();
+        })
       });
-      
+
     });
     
     suite('DELETE /api/issues/{project} => text', function() {
       
       test('No _id', function(done) {
-        
+        chai.request(server)
+        .delete('/api/issues/test')
+        .send({ _id: 0})
+        .end( function(err, res) {
+          assert.equal(res.status, 200);
+          assert.property(res.body, 'failed');
+          done();
+        })
       });
       
       test('Valid _id', function(done) {
+
+        async function getLastIdAndDelete() {
+          let lastId = null;
+          await db('issue').max('_id').where('project_id', '=', 1)
+          .returning('_id')
+          .then( data => {
+            lastId = data[0].max;
+            console.log(data, 'here is lastId in delete')
+          })
+
+          chai.request(server)
+          .delete('/api/issues/test')
+          .send({_id: lastId })
+          .end( function(err, res) {
+            assert.equal(res.status, 200);
+            assert.property(res.body, 'success');
+            done();
+          })
+        }
+
+        getLastIdAndDelete();
         
       });
       
